@@ -68,6 +68,9 @@ namespace elf {
         SymbolTable(Reader reader, std::shared_ptr<ISection> section);
 
     public:
+        size_t size();
+
+    public:
         std::unique_ptr<ISymbol> operator[](size_t index);
 
     public:

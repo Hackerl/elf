@@ -101,6 +101,10 @@ elf::SymbolTable::SymbolTable(elf::Reader reader, std::shared_ptr<ISection> sect
 
 }
 
+size_t elf::SymbolTable::size() {
+    return mSection->size() / mSection->entrySize();
+}
+
 std::unique_ptr<elf::ISymbol> elf::SymbolTable::operator[](size_t index) {
     return *(begin() + index);
 }
@@ -115,7 +119,7 @@ elf::SymbolIterator elf::SymbolTable::begin() {
 }
 
 elf::SymbolIterator elf::SymbolTable::end() {
-    return begin() + mSection->size() / mSection->entrySize();
+    return begin() + size();
 }
 
 template class elf::Symbol<Elf32_Sym, elf::endian::Little>;

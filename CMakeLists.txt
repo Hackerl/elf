@@ -13,6 +13,7 @@ add_library(
         src/segment.cpp
         src/section.cpp
         src/symbol.cpp
+        src/relocation.cpp
 )
 
 target_include_directories(elf PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
