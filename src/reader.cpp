@@ -6,9 +6,10 @@
 #include <algorithm>
 
 bool elf::Reader::load(const std::string &path) {
-    size_t length = std::filesystem::file_size(path);
+    std::error_code ec;
+    size_t length = std::filesystem::file_size(path, ec);
 
-    if (length < EI_NIDENT)
+    if (ec || length < EI_NIDENT)
         return false;
 
     int fd = open(path.c_str(), O_RDONLY);
