@@ -45,16 +45,29 @@ namespace elf {
 
     class SymbolIterator {
     public:
+        using difference_type = std::ptrdiff_t;
+        using value_type = std::unique_ptr<ISymbol>;
+        using pointer = value_type *;
+        using reference = value_type &;
+        using iterator_category = std::random_access_iterator_tag;
+
+    public:
         SymbolIterator(const std::byte *symbol, size_t size, endian::Type endian, std::shared_ptr<ISection> section);
 
     public:
         std::unique_ptr<ISymbol> operator*();
+        SymbolIterator &operator--();
         SymbolIterator &operator++();
-        SymbolIterator &operator+(size_t offset);
+        SymbolIterator &operator+=(std::ptrdiff_t offset);
+        SymbolIterator operator-(std::ptrdiff_t offset);
+        SymbolIterator operator+(std::ptrdiff_t offset);
 
     public:
         bool operator==(const SymbolIterator &rhs);
         bool operator!=(const SymbolIterator &rhs);
+
+    public:
+        std::ptrdiff_t operator-(const SymbolIterator &rhs);
 
     private:
         size_t mSize;

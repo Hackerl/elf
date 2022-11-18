@@ -73,31 +73,31 @@ std::unique_ptr<elf::IHeader> elf::Reader::header() const {
 }
 
 std::vector<std::shared_ptr<elf::ISegment>> elf::Reader::segments() const {
-    std::unique_ptr<IHeader> hdr = header();
+    std::unique_ptr<IHeader> header = this->header();
     std::vector<std::shared_ptr<elf::ISegment>> segments;
 
-    for (Elf64_Half i = 0; i < hdr->segmentNum(); i++) {
-        if (hdr->ident()[EI_CLASS] == ELFCLASS64) {
-            if (hdr->ident()[EI_DATA] == ELFDATA2LSB) {
+    for (Elf64_Half i = 0; i < header->segmentNum(); i++) {
+        if (header->ident()[EI_CLASS] == ELFCLASS64) {
+            if (header->ident()[EI_DATA] == ELFDATA2LSB) {
                 segments.push_back(std::make_shared<Segment<Elf64_Phdr, endian::Little>>(
-                        (Elf64_Phdr *) ((std::byte *) mBuffer.get() + hdr->segmentOffset() + i * hdr->segmentEntrySize()),
+                        (Elf64_Phdr *) ((std::byte *) mBuffer.get() + header->segmentOffset() + i * header->segmentEntrySize()),
                         mBuffer
                 ));
             } else {
                 segments.push_back(std::make_shared<Segment<Elf64_Phdr, endian::Big>>(
-                        (Elf64_Phdr *) ((std::byte *) mBuffer.get() + hdr->segmentOffset() + i * hdr->segmentEntrySize()),
+                        (Elf64_Phdr *) ((std::byte *) mBuffer.get() + header->segmentOffset() + i * header->segmentEntrySize()),
                         mBuffer
                 ));
             }
         } else {
-            if (hdr->ident()[EI_DATA] == ELFDATA2LSB) {
+            if (header->ident()[EI_DATA] == ELFDATA2LSB) {
                 segments.push_back(std::make_shared<Segment<Elf32_Phdr, endian::Little>>(
-                        (Elf32_Phdr *) ((std::byte *) mBuffer.get() + hdr->segmentOffset() + i * hdr->segmentEntrySize()),
+                        (Elf32_Phdr *) ((std::byte *) mBuffer.get() + header->segmentOffset() + i * header->segmentEntrySize()),
                         mBuffer
                 ));
             } else {
                 segments.push_back(std::make_shared<Segment<Elf32_Phdr, endian::Big>>(
-                        (Elf32_Phdr *) ((std::byte *) mBuffer.get() + hdr->segmentOffset() + i * hdr->segmentEntrySize()),
+                        (Elf32_Phdr *) ((std::byte *) mBuffer.get() + header->segmentOffset() + i * header->segmentEntrySize()),
                         mBuffer
                 ));
             }
@@ -108,31 +108,31 @@ std::vector<std::shared_ptr<elf::ISegment>> elf::Reader::segments() const {
 }
 
 std::vector<std::shared_ptr<elf::ISection>> elf::Reader::sections() const {
-    std::unique_ptr<IHeader> hdr = header();
+    std::unique_ptr<IHeader> header = this->header();
     std::vector<std::shared_ptr<elf::ISection>> sections;
 
-    for (Elf64_Half i = 0; i < hdr->sectionNum(); i++) {
-        if (hdr->ident()[EI_CLASS] == ELFCLASS64) {
-            if (hdr->ident()[EI_DATA] == ELFDATA2LSB) {
+    for (Elf64_Half i = 0; i < header->sectionNum(); i++) {
+        if (header->ident()[EI_CLASS] == ELFCLASS64) {
+            if (header->ident()[EI_DATA] == ELFDATA2LSB) {
                 sections.push_back(std::make_shared<Section<Elf64_Shdr, endian::Little>>(
-                        (Elf64_Shdr *) ((std::byte *) mBuffer.get() + hdr->sectionOffset() + i * hdr->sectionEntrySize()),
+                        (Elf64_Shdr *) ((std::byte *) mBuffer.get() + header->sectionOffset() + i * header->sectionEntrySize()),
                         mBuffer
                 ));
             } else {
                 sections.push_back(std::make_shared<Section<Elf64_Shdr, endian::Big>>(
-                        (Elf64_Shdr *) ((std::byte *) mBuffer.get() + hdr->sectionOffset() + i * hdr->sectionEntrySize()),
+                        (Elf64_Shdr *) ((std::byte *) mBuffer.get() + header->sectionOffset() + i * header->sectionEntrySize()),
                         mBuffer
                 ));
             }
         } else {
-            if (hdr->ident()[EI_DATA] == ELFDATA2LSB) {
+            if (header->ident()[EI_DATA] == ELFDATA2LSB) {
                 sections.push_back(std::make_shared<Section<Elf32_Shdr, endian::Little>>(
-                        (Elf32_Shdr *) ((std::byte *) mBuffer.get() + hdr->sectionOffset() + i * hdr->sectionEntrySize()),
+                        (Elf32_Shdr *) ((std::byte *) mBuffer.get() + header->sectionOffset() + i * header->sectionEntrySize()),
                         mBuffer
                 ));
             } else {
                 sections.push_back(std::make_shared<Section<Elf32_Shdr, endian::Big>>(
-                        (Elf32_Shdr *) ((std::byte *) mBuffer.get() + hdr->sectionOffset() + i * hdr->sectionEntrySize()),
+                        (Elf32_Shdr *) ((std::byte *) mBuffer.get() + header->sectionOffset() + i * header->sectionEntrySize()),
                         mBuffer
                 ));
             }
@@ -140,8 +140,34 @@ std::vector<std::shared_ptr<elf::ISection>> elf::Reader::sections() const {
     }
 
     for (const auto &section: sections) {
-        section->name((char *) sections[hdr->sectionStrIndex()]->data() + section->nameIndex());
+        section->name((char *) sections[header->sectionStrIndex()]->data() + section->nameIndex());
     }
 
     return sections;
+}
+
+std::optional<std::vector<std::byte>> elf::Reader::readVirtualMemory(Elf64_Addr address, Elf64_Xword length) const {
+    std::vector<std::shared_ptr<elf::ISegment>> segments = this->segments();
+
+    auto it = std::find_if(
+            segments.begin(),
+            segments.end(),
+            [=](const auto &segment) {
+                if (segment->type() != PT_LOAD)
+                    return false;
+
+                return address >= segment->virtualAddress() && address <= segment->virtualAddress() + segment->fileSize() - 1;
+            }
+    );
+
+    if (it == segments.end())
+        return std::nullopt;
+
+    if (it->operator*().virtualAddress() + it->operator*().fileSize() - address < length)
+        return std::nullopt;
+
+    return std::vector<std::byte>{
+            it->operator*().data() + address - it->operator*().virtualAddress(),
+            it->operator*().data() + address - it->operator*().virtualAddress() + length
+    };
 }

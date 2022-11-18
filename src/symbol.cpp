@@ -79,14 +79,27 @@ std::unique_ptr<elf::ISymbol> elf::SymbolIterator::operator*() {
     return symbol;
 }
 
+elf::SymbolIterator &elf::SymbolIterator::operator--() {
+    mSymbol -= mSize;
+    return *this;
+}
+
 elf::SymbolIterator &elf::SymbolIterator::operator++() {
     mSymbol += mSize;
     return *this;
 }
 
-elf::SymbolIterator &elf::SymbolIterator::operator+(size_t offset) {
+elf::SymbolIterator &elf::SymbolIterator::operator+=(std::ptrdiff_t offset) {
     mSymbol += offset * mSize;
     return *this;
+}
+
+elf::SymbolIterator elf::SymbolIterator::operator-(std::ptrdiff_t offset) {
+    return {mSymbol - offset * mSize, mSize, mEndian, mSection};
+}
+
+elf::SymbolIterator elf::SymbolIterator::operator+(std::ptrdiff_t offset) {
+    return {mSymbol + offset * mSize, mSize, mEndian, mSection};
 }
 
 bool elf::SymbolIterator::operator==(const elf::SymbolIterator &rhs) {
@@ -95,6 +108,10 @@ bool elf::SymbolIterator::operator==(const elf::SymbolIterator &rhs) {
 
 bool elf::SymbolIterator::operator!=(const elf::SymbolIterator &rhs) {
     return !operator==(rhs);
+}
+
+std::ptrdiff_t elf::SymbolIterator::operator-(const elf::SymbolIterator &rhs) {
+    return (mSymbol - rhs.mSymbol) / (std::ptrdiff_t) mSize;
 }
 
 elf::SymbolTable::SymbolTable(elf::Reader reader, std::shared_ptr<ISection> section) : mReader(std::move(reader)), mSection(std::move(section)) {
@@ -106,7 +123,7 @@ size_t elf::SymbolTable::size() {
 }
 
 std::unique_ptr<elf::ISymbol> elf::SymbolTable::operator[](size_t index) {
-    return *(begin() + index);
+    return *(begin() + (std::ptrdiff_t) index);
 }
 
 elf::SymbolIterator elf::SymbolTable::begin() {
@@ -119,7 +136,7 @@ elf::SymbolIterator elf::SymbolTable::begin() {
 }
 
 elf::SymbolIterator elf::SymbolTable::end() {
-    return begin() + size();
+    return begin() + (std::ptrdiff_t) size();
 }
 
 template class elf::Symbol<Elf32_Sym, elf::endian::Little>;
