@@ -146,6 +146,26 @@ std::vector<std::shared_ptr<elf::ISection>> elf::Reader::sections() const {
     return sections;
 }
 
+const std::byte *elf::Reader::virtualMemory(Elf64_Addr address) const {
+    std::vector<std::shared_ptr<elf::ISegment>> segments = this->segments();
+
+    auto it = std::find_if(
+            segments.begin(),
+            segments.end(),
+            [=](const auto &segment) {
+                if (segment->type() != PT_LOAD)
+                    return false;
+
+                return address >= segment->virtualAddress() && address <= segment->virtualAddress() + segment->fileSize() - 1;
+            }
+    );
+
+    if (it == segments.end())
+        return nullptr;
+
+    return it->operator*().data() + address - it->operator*().virtualAddress();
+}
+
 std::optional<std::vector<std::byte>> elf::Reader::readVirtualMemory(Elf64_Addr address, Elf64_Xword length) const {
     std::vector<std::shared_ptr<elf::ISegment>> segments = this->segments();
 

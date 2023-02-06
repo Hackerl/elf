@@ -20,6 +20,7 @@ namespace elf {
         [[nodiscard]] std::vector<std::shared_ptr<ISection>> sections() const;
 
     public:
+        [[nodiscard]] const std::byte *virtualMemory(Elf64_Addr address) const;
         [[nodiscard]] std::optional<std::vector<std::byte>> readVirtualMemory(Elf64_Addr address, Elf64_Xword length) const;
 
     private:
