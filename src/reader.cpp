@@ -5,53 +5,8 @@
 #include <filesystem>
 #include <algorithm>
 
-bool elf::Reader::load(const std::string &path) {
-    std::error_code ec;
-    size_t length = std::filesystem::file_size(path, ec);
+elf::Reader::Reader(std::shared_ptr<void> buffer) : mBuffer(std::move(buffer)) {
 
-    if (ec || length < EI_NIDENT)
-        return false;
-
-    int fd = open(path.c_str(), O_RDONLY);
-
-    if (fd < 0)
-        return false;
-
-    void *buffer = mmap(
-            nullptr,
-            length,
-            PROT_READ,
-            MAP_PRIVATE,
-            fd,
-            0
-    );
-
-    if (buffer == MAP_FAILED) {
-        close(fd);
-        return false;
-    }
-
-    close(fd);
-
-    mBuffer = std::shared_ptr<void>(buffer, [=](void *ptr) {
-        munmap(ptr, length);
-    });
-
-    auto ident = (unsigned char *) mBuffer.get();
-
-    if (ident[EI_MAG0] != ELFMAG0 ||
-        ident[EI_MAG1] != ELFMAG1 ||
-        ident[EI_MAG2] != ELFMAG2 ||
-        ident[EI_MAG3] != ELFMAG3)
-        return false;
-
-    if (ident[EI_CLASS] != ELFCLASS64 && ident[EI_CLASS] != ELFCLASS32)
-        return false;
-
-    if (ident[EI_DATA] != ELFDATA2LSB && ident[EI_DATA] != ELFDATA2MSB)
-        return false;
-
-    return true;
 }
 
 std::unique_ptr<elf::IHeader> elf::Reader::header() const {
@@ -190,4 +145,57 @@ std::optional<std::vector<std::byte>> elf::Reader::readVirtualMemory(Elf64_Addr 
             it->operator*().data() + address - it->operator*().virtualAddress(),
             it->operator*().data() + address - it->operator*().virtualAddress() + length
     };
+}
+
+std::optional<elf::Reader> elf::openFile(const std::filesystem::path &path) {
+    std::error_code ec;
+    size_t length = std::filesystem::file_size(path, ec);
+
+    if (ec || length < EI_NIDENT)
+        return std::nullopt;
+
+    int fd = open(path.c_str(), O_RDONLY);
+
+    if (fd < 0)
+        return std::nullopt;
+
+    void *buffer = mmap(
+            nullptr,
+            length,
+            PROT_READ,
+            MAP_PRIVATE,
+            fd,
+            0
+    );
+
+    if (buffer == MAP_FAILED) {
+        close(fd);
+        return std::nullopt;
+    }
+
+    close(fd);
+
+    auto ident = (unsigned char *) buffer;
+
+    if (ident[EI_MAG0] != ELFMAG0 ||
+        ident[EI_MAG1] != ELFMAG1 ||
+        ident[EI_MAG2] != ELFMAG2 ||
+        ident[EI_MAG3] != ELFMAG3) {
+        munmap(buffer, length);
+        return std::nullopt;
+    }
+
+    if (ident[EI_CLASS] != ELFCLASS64 && ident[EI_CLASS] != ELFCLASS32) {
+        munmap(buffer, length);
+        return std::nullopt;
+    }
+
+    if (ident[EI_DATA] != ELFDATA2LSB && ident[EI_DATA] != ELFDATA2MSB) {
+        munmap(buffer, length);
+        return std::nullopt;
+    }
+
+    return Reader(std::shared_ptr<void>(buffer, [=](void *ptr) {
+        munmap(ptr, length);
+    }));
 }

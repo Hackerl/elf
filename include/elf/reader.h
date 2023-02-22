@@ -8,11 +8,12 @@
 #include <memory>
 #include <vector>
 #include <optional>
+#include <filesystem>
 
 namespace elf {
     class Reader {
     public:
-        bool load(const std::string &path);
+        explicit Reader(std::shared_ptr<void> buffer);
 
     public:
         [[nodiscard]] std::unique_ptr<IHeader> header() const;
@@ -26,6 +27,8 @@ namespace elf {
     private:
         std::shared_ptr<void> mBuffer;
     };
+
+    std::optional<Reader> openFile(const std::filesystem::path &path);
 }
 
 #endif //ELF_READER_H
