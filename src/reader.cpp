@@ -154,7 +154,7 @@ std::optional<elf::Reader> elf::openFile(const std::filesystem::path &path) {
     if (ec || length < EI_NIDENT)
         return std::nullopt;
 
-    int fd = open(path.c_str(), O_RDONLY);
+    int fd = open(path.string().c_str(), O_RDONLY);
 
     if (fd < 0)
         return std::nullopt;
