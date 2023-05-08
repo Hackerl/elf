@@ -3,6 +3,7 @@
 
 #include <endian.h>
 #include <cstdint>
+#include <cstddef>
 #include <type_traits>
 
 namespace elf::endian {
@@ -11,51 +12,21 @@ namespace elf::endian {
         Big
     };
 
-    template<typename T>
-    T little(T bits) {
-        if constexpr (std::is_same_v<T, uint16_t>) {
-            return le16toh(bits);
-        } else if constexpr (std::is_same_v<T, uint32_t>) {
-            return le32toh(bits);
-        } else if constexpr (std::is_same_v<T, uint64_t>) {
-            return le64toh(bits);
-        } else if constexpr (std::is_same_v<T, int16_t>) {
-            return (int16_t) little((uint16_t) bits);
-        } else if constexpr (std::is_same_v<T, int32_t>) {
-            return (int32_t) little((uint32_t) bits);
-        } else if constexpr (std::is_same_v<T, int64_t>) {
-            return (int64_t) little((uint64_t) bits);
-        } else {
-            static_assert(!sizeof(T *), "type not supported");
-        }
-    }
-
-    template<typename T>
-    T big(T bits) {
-        if constexpr (std::is_same_v<T, uint16_t>) {
-            return be16toh(bits);
-        } else if constexpr (std::is_same_v<T, uint32_t>) {
-            return be32toh(bits);
-        } else if constexpr (std::is_same_v<T, uint64_t>) {
-            return be64toh(bits);
-        } else if constexpr (std::is_same_v<T, int16_t>) {
-            return (int16_t) big((uint16_t) bits);
-        } else if constexpr (std::is_same_v<T, int32_t>) {
-            return (int32_t) big((uint32_t) bits);
-        } else if constexpr (std::is_same_v<T, int64_t>) {
-            return (int64_t) big((uint64_t) bits);
-        } else {
-            static_assert(!sizeof(T *), "type not supported");
-        }
-    }
-
     template<Type endian, typename T>
     T convert(T bits) {
+        T r = 0;
+
         if constexpr (endian == Little) {
-            return little(bits);
+            for (size_t i = 0; i < sizeof(T); i++) {
+                r |= ((T) *(((std::byte *) &bits) + i)) << (i * 8);
+            }
         } else {
-            return big(bits);
+            for (size_t i = 0; i < sizeof(T); i++) {
+                r |= ((T) *(((std::byte *) &bits) + i)) << ((sizeof(T) - i - 1) * 8);
+            }
         }
+
+        return r;
     }
 }
 
