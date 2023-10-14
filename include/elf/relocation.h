@@ -20,10 +20,10 @@ namespace elf {
         virtual Elf64_Xword symbolIndex() = 0;
     };
 
-    template<typename T, endian::Type endian>
+    template<typename T, endian::Type Endian>
     class Relocation : public IRelocation {
     public:
-        explicit Relocation(T *relocation);
+        explicit Relocation(const T *relocation);
 
     public:
         std::shared_ptr<ISymbol> symbol() override;

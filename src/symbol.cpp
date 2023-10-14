@@ -1,48 +1,48 @@
 #include <elf/symbol.h>
 
-template<typename T, elf::endian::Type endian>
-elf::Symbol<T, endian>::Symbol(T *symbol) : mSymbol(symbol) {
+template<typename T, elf::endian::Type Endian>
+elf::Symbol<T, Endian>::Symbol(const T *symbol) : mSymbol(symbol) {
 
 }
 
-template<typename T, elf::endian::Type endian>
-std::string elf::Symbol<T, endian>::name() {
+template<typename T, elf::endian::Type Endian>
+std::string elf::Symbol<T, Endian>::name() {
     return mName;
 }
 
-template<typename T, elf::endian::Type endian>
-void elf::Symbol<T, endian>::name(std::string_view name) {
+template<typename T, elf::endian::Type Endian>
+void elf::Symbol<T, Endian>::name(std::string_view name) {
     mName = name;
 }
 
-template<typename T, elf::endian::Type endian>
-Elf64_Word elf::Symbol<T, endian>::nameIndex() {
-    return endian::convert<endian>(mSymbol->st_name);
+template<typename T, elf::endian::Type Endian>
+Elf64_Word elf::Symbol<T, Endian>::nameIndex() {
+    return endian::convert<Endian>(mSymbol->st_name);
 }
 
-template<typename T, elf::endian::Type endian>
-unsigned char elf::Symbol<T, endian>::info() {
+template<typename T, elf::endian::Type Endian>
+unsigned char elf::Symbol<T, Endian>::info() {
     return mSymbol->st_info;
 }
 
-template<typename T, elf::endian::Type endian>
-unsigned char elf::Symbol<T, endian>::other() {
+template<typename T, elf::endian::Type Endian>
+unsigned char elf::Symbol<T, Endian>::other() {
     return mSymbol->st_other;
 }
 
-template<typename T, elf::endian::Type endian>
-Elf64_Section elf::Symbol<T, endian>::sectionIndex() {
-    return endian::convert<endian>(mSymbol->st_shndx);
+template<typename T, elf::endian::Type Endian>
+Elf64_Section elf::Symbol<T, Endian>::sectionIndex() {
+    return endian::convert<Endian>(mSymbol->st_shndx);
 }
 
-template<typename T, elf::endian::Type endian>
-Elf64_Addr elf::Symbol<T, endian>::value() {
-    return endian::convert<endian>(mSymbol->st_value);
+template<typename T, elf::endian::Type Endian>
+Elf64_Addr elf::Symbol<T, Endian>::value() {
+    return endian::convert<Endian>(mSymbol->st_value);
 }
 
-template<typename T, elf::endian::Type endian>
-Elf64_Xword elf::Symbol<T, endian>::size() {
-    return endian::convert<endian>(mSymbol->st_size);
+template<typename T, elf::endian::Type Endian>
+Elf64_Xword elf::Symbol<T, Endian>::size() {
+    return endian::convert<Endian>(mSymbol->st_size);
 }
 
 elf::SymbolIterator::SymbolIterator(
@@ -58,17 +58,15 @@ std::unique_ptr<elf::ISymbol> elf::SymbolIterator::operator*() {
     std::unique_ptr<elf::ISymbol> symbol;
 
     if (mSize == sizeof(Elf64_Sym)) {
-        if (mEndian == endian::Little) {
-            symbol = std::make_unique<Symbol<Elf64_Sym, endian::Little>>((Elf64_Sym *) mSymbol);
-        } else {
-            symbol = std::make_unique<Symbol<Elf64_Sym, endian::Big>>((Elf64_Sym *) mSymbol);
-        }
+        if (mEndian == endian::Little)
+            symbol = std::make_unique<Symbol<Elf64_Sym, endian::Little>>((const Elf64_Sym *) mSymbol);
+        else
+            symbol = std::make_unique<Symbol<Elf64_Sym, endian::Big>>((const Elf64_Sym *) mSymbol);
     } else {
-        if (mEndian == endian::Little) {
-            symbol = std::make_unique<Symbol<Elf32_Sym, endian::Little>>((Elf32_Sym *) mSymbol);
-        } else {
-            symbol = std::make_unique<Symbol<Elf32_Sym, endian::Big>>((Elf32_Sym *) mSymbol);
-        }
+        if (mEndian == endian::Little)
+            symbol = std::make_unique<Symbol<Elf32_Sym, endian::Little>>((const Elf32_Sym *) mSymbol);
+        else
+            symbol = std::make_unique<Symbol<Elf32_Sym, endian::Big>>((const Elf32_Sym *) mSymbol);
     }
 
     if (!symbol->nameIndex())
@@ -114,7 +112,8 @@ std::ptrdiff_t elf::SymbolIterator::operator-(const elf::SymbolIterator &rhs) {
     return (mSymbol - rhs.mSymbol) / (std::ptrdiff_t) mSize;
 }
 
-elf::SymbolTable::SymbolTable(elf::Reader reader, std::shared_ptr<ISection> section) : mReader(std::move(reader)), mSection(std::move(section)) {
+elf::SymbolTable::SymbolTable(elf::Reader reader, std::shared_ptr<ISection> section)
+        : mReader(std::move(reader)), mSection(std::move(section)) {
 
 }
 
@@ -139,7 +138,14 @@ elf::SymbolIterator elf::SymbolTable::end() {
     return begin() + (std::ptrdiff_t) size();
 }
 
-template class elf::Symbol<Elf32_Sym, elf::endian::Little>;
-template class elf::Symbol<Elf32_Sym, elf::endian::Big>;
-template class elf::Symbol<Elf64_Sym, elf::endian::Little>;
-template class elf::Symbol<Elf64_Sym, elf::endian::Big>;
+template
+class elf::Symbol<Elf32_Sym, elf::endian::Little>;
+
+template
+class elf::Symbol<Elf32_Sym, elf::endian::Big>;
+
+template
+class elf::Symbol<Elf64_Sym, elf::endian::Little>;
+
+template
+class elf::Symbol<Elf64_Sym, elf::endian::Big>;

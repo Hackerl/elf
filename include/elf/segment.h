@@ -25,10 +25,10 @@ namespace elf {
         virtual Elf64_Xword align() = 0;
     };
 
-    template<typename T, endian::Type endian>
+    template<typename T, endian::Type Endian>
     class Segment : public ISegment {
     public:
-        Segment(T *segment, std::shared_ptr<void> buffer);
+        Segment(const T *segment, std::shared_ptr<void> buffer);
 
     public:
         const std::byte *data() override;

@@ -9,6 +9,7 @@
 #include <vector>
 #include <optional>
 #include <filesystem>
+#include <tl/expected.hpp>
 
 namespace elf {
     class Reader {
@@ -28,7 +29,7 @@ namespace elf {
         std::shared_ptr<void> mBuffer;
     };
 
-    std::optional<Reader> openFile(const std::filesystem::path &path);
+    tl::expected<Reader, std::error_code> openFile(const std::filesystem::path &path);
 }
 
 #endif //ELF_READER_H

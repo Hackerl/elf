@@ -29,10 +29,10 @@ namespace elf {
         virtual Elf64_Half sectionStrIndex() = 0;
     };
 
-    template<typename T, endian::Type endian>
+    template<typename T, endian::Type Endian>
     class Header : public IHeader {
     public:
-        explicit Header(T *header);
+        explicit Header(const T *header);
 
     public:
         const unsigned char *ident() override;

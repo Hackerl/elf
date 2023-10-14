@@ -21,10 +21,10 @@ namespace elf {
         virtual Elf64_Xword size() = 0;
     };
 
-    template<typename T, endian::Type endian>
+    template<typename T, endian::Type Endian>
     class Symbol : public ISymbol {
     public:
-        explicit Symbol(T *symbol);
+        explicit Symbol(const T *symbol);
 
     public:
         std::string name() override;

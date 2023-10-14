@@ -29,10 +29,10 @@ namespace elf {
         virtual Elf64_Xword entrySize() = 0;
     };
 
-    template<typename T, endian::Type endian>
+    template<typename T, endian::Type Endian>
     class Section : public ISection {
     public:
-        Section(T *section, std::shared_ptr<void> buffer);
+        Section(const T *section, std::shared_ptr<void> buffer);
 
     public:
         std::string name() override;
